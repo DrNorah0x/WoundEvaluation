@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wound Classification Toolkit - Executive Summary</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Babel for in-browser JSX compilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Import Maps for React and Lucide Icons -->
+    <script type="importmap">
+        {
+            "imports": {
+                "react": "https://esm.sh/react@18.2.0",
+                "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+                "lucide-react": "https://esm.sh/lucide-react@0.292.0"
+            }
+        }
+    </script>
+    
+    <style>
+        /* Custom scrollbar for a polished look */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        html { scroll-behavior: smooth; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 selection:bg-blue-200">
+    
+    <!-- React Root -->
+    <div id="root"></div>
+
+    <!-- Application Logic -->
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { 
+          BookOpen, Layers, ShieldAlert, Cpu, Activity, 
+          Code, Zap, Target, BarChart3, Database, ChevronRight, 
+          Menu, X, Info, Settings, FunctionSquare, Calendar, 
+          GraduationCap, Trophy, LineChart, Search, BrainCircuit, HeartPulse, Scale
+        } from 'lucide-react';
+
+        // --- Components ---
+
+        const SidebarLink = ({ active, href, icon: Icon, children, onClick }) => (
+          <a 
+            href={href} 
+            onClick={onClick}
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium text-sm
+              ${active 
+                ? 'bg-blue-50 text-blue-700' 
+                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+          >
+            <Icon className={`w-4 h-4 ${active ? 'text-blue-600' : 'text-slate-400'}`} />
+            {children}
+          </a>
+        );
+
+        const SectionHeader = ({ id, title, icon: Icon, subtitle }) => (
+          <div id={id} className="pt-20 pb-6 border-b border-slate-100 mb-8 mt-[-4rem]">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-blue-100 text-blue-700 rounded-lg">
+                <Icon className="w-6 h-6" />
+              </div>
+              <h2 className="text-2xl font-bold text-slate-900">{title}</h2>
+            </div>
+            {subtitle && <p className="text-slate-500 text-lg mt-2">{subtitle}</p>}
+          </div>
+        );
+
+        const NonExpertCallout = ({ title, children }) => (
+          <div className="my-5 bg-indigo-50 border-l-4 border-indigo-500 p-5 rounded-r-xl shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <Info className="w-5 h-5 text-indigo-700" />
+              <h4 className="font-bold text-indigo-900 text-sm uppercase tracking-wider">{title}</h4>
+            </div>
+            <div className="text-sm text-indigo-800 leading-relaxed space-y-2">
+              {children}
+            </div>
+          </div>
+        );
+
+        const ModelCard = ({ title, type, description, rationale, icon: Icon }) => {
+          return (
+            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-50 text-blue-700 rounded-lg">
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-slate-900 text-lg">{title}</h3>
+                    <div className="flex gap-2 mt-1">
+                      <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full uppercase tracking-wide">
+                        {type}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <p className="text-slate-600 text-sm mb-5 leading-relaxed flex-grow">{description}</p>
+              <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Why Included?</h4>
+                <p className="text-sm text-slate-600">{rationale}</p>
+              </div>
+            </div>
+          );
+        };
+
+        const MetricCard = ({ title, highlight, description, icon: Icon }) => (
+          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col h-full hover:border-blue-300 transition-colors">
+            <div className="flex items-center gap-2 mb-2">
+              {Icon && <Icon className="w-4 h-4 text-blue-600" />}
+              <h4 className="font-bold text-slate-900 text-md">{title}</h4>
+            </div>
+            <div className="text-xs font-semibold text-blue-600 bg-blue-50 w-fit px-2 py-1 rounded mb-3">
+              {highlight}
+            </div>
+            <p className="text-sm text-slate-600 leading-relaxed flex-grow">{description}</p>
+          </div>
+        );
+
+        const ParameterItem = ({ name, description, detail }) => (
+          <div className="flex items-start gap-3 mt-3">
+            <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 flex-shrink-0"></div>
+            <div className="text-sm text-slate-600">
+              <strong className="text-slate-800 block md:inline">{name}: </strong> 
+              <span className="block md:inline">{detail}</span>
+            </div>
+          </div>
+        );
+
+        // --- Main Application ---
+
+        function App() {
+          const [activeSection, setActiveSection] = useState('overview');
+          const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+          useEffect(() => {
+            const handleScroll = () => {
+              const sections = ['overview', 'challenge', 'augmentations', 'models', 'training', 'metrics', 'results'];
+              const scrollPosition = window.scrollY + 100;
+
+              for (const section of sections.reverse()) {
+                const element = document.getElementById(section);
+                if (element && element.offsetTop <= scrollPosition) {
+                  setActiveSection(section);
+                  break;
+                }
+              }
+            };
+
+            window.addEventListener('scroll', handleScroll);
+            return () => window.removeEventListener('scroll', handleScroll);
+          }, []);
+
+          const closeMenu = () => setMobileMenuOpen(false);
+
+          return (
+            <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans">
+              
+              <div className="md:hidden sticky top-0 z-50 bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between shadow-sm">
+                <div className="flex items-center gap-2">
+                  <HeartPulse className="w-6 h-6 text-blue-600" />
+                  <span className="font-bold text-slate-900">WoundEval Project</span>
+                </div>
+                <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
+                  {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                </button>
+              </div>
+
+              <nav className={`
+                fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 transform transition-transform duration-300 ease-in-out md:translate-x-0 md:sticky md:top-0 md:h-screen overflow-y-auto shadow-lg md:shadow-none
+                ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+              `}>
+                <div className="p-6 hidden md:flex items-center gap-2 mb-4">
+                  <HeartPulse className="w-7 h-7 text-blue-600" />
+                  <span className="font-bold text-xl text-slate-900">WoundEval</span>
+                </div>
+                
+                <div className="px-4 pb-6 space-y-1">
+                  <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-4 mt-6">Executive Summary</div>
+                  <SidebarLink active={activeSection === 'overview'} href="#overview" icon={BookOpen} onClick={closeMenu}>Project Overview</SidebarLink>
+                  <SidebarLink active={activeSection === 'challenge'} href="#challenge" icon={Target} onClick={closeMenu}>The Data Challenge</SidebarLink>
+                  <SidebarLink active={activeSection === 'augmentations'} href="#augmentations" icon={Layers} onClick={closeMenu}>Data Augmentations</SidebarLink>
+                  
+                  <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-4 mt-8">The AI Technology</div>
+                  <SidebarLink active={activeSection === 'models'} href="#models" icon={BrainCircuit} onClick={closeMenu}>AI Models Tested</SidebarLink>
+                  <SidebarLink active={activeSection === 'training'} href="#training" icon={Settings} onClick={closeMenu}>How We Trained It</SidebarLink>
+                  
+                  <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-4 mt-8">Final Outcomes</div>
+                  <SidebarLink active={activeSection === 'metrics'} href="#metrics" icon={Scale} onClick={closeMenu}>Measuring Success</SidebarLink>
+                  <SidebarLink active={activeSection === 'results'} href="#results" icon={Trophy} onClick={closeMenu}>Final Leaderboard</SidebarLink>
+                </div>
+              </nav>
+
+              <main className="flex-1 px-4 sm:px-8 lg:px-16 py-8 lg:py-12 max-w-5xl mx-auto">
+                
+                <div id="overview" className="mb-16 pt-4">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold mb-6">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                    </span>
+                    Executive Report
+                  </div>
+                  <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 mb-6 tracking-tight">
+                    Wound Classification Using AI
+                  </h1>
+                  <p className="text-xl text-slate-600 mb-8 leading-relaxed max-w-3xl">
+                    This project evaluates multiple cutting-edge Artificial Intelligence models to automatically classify different types of physical wounds (such as burns, cuts, and abrasions) from standard photographs. Our goal is to build an accurate, reliable tool that can assist medical professionals with initial diagnosis and triage.
+                  </p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+                      <div className="text-3xl font-black text-blue-600 mb-1">7</div>
+                      <div className="text-sm font-medium text-slate-500">AIs Tested</div>
+                    </div>
+                    <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+                      <div className="text-3xl font-black text-blue-600 mb-1">6</div>
+                      <div className="text-sm font-medium text-slate-500">Wound Categories</div>
+                    </div>
+                    <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+                      <div className="text-3xl font-black text-blue-600 mb-1">381</div>
+                      <div className="text-sm font-medium text-slate-500">Training Images</div>
+                    </div>
+                    <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+                      <div className="text-3xl font-black text-blue-600 mb-1">145</div>
+                      <div className="text-sm font-medium text-slate-500">Testing Images</div>
+                    </div>
+                  </div>
+                </div>
+
+                <SectionHeader id="challenge" title="The Small-Data Challenge" icon={Target} subtitle="Why standard approaches don't work for rare medical data." />
+                <div className="prose prose-slate max-w-none text-slate-600 mb-16">
+                  <p className="text-lg mb-4">
+                    Modern Artificial Intelligence usually requires tens of thousands of images to learn properly. In medical fields, gathering that much data is nearly impossible due to privacy laws and the rarity of certain injuries.
+                  </p>
+                  <p>
+                    Our dataset contains only <strong>381 training images</strong>, and they are highly imbalanced:
+                  </p>
+                  <div className="flex flex-wrap gap-2 mb-6 mt-4">
+                    <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-sm font-bold border border-indigo-200 shadow-sm">Bruises (117)</span>
+                    <span className="bg-orange-50 text-orange-700 px-3 py-1 rounded-full text-sm font-bold border border-orange-200 shadow-sm">Abrasions (80)</span>
+                    <span className="bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-sm font-bold border border-amber-200 shadow-sm">Lacerations (57)</span>
+                    <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-sm font-bold border border-emerald-200 shadow-sm">Burns (55)</span>
+                    <span className="bg-teal-50 text-teal-700 px-3 py-1 rounded-full text-sm font-bold border border-teal-200 shadow-sm">Cuts (49)</span>
+                    <span className="bg-rose-50 text-rose-700 px-3 py-1 rounded-full text-sm font-bold border border-rose-200 shadow-sm">Stab Wounds (23)</span>
+                  </div>
+                  <p>
+                    <strong>The Danger:</strong> Because "Bruises" are so common, a poorly trained AI might simply guess "Bruise" every single time. It would achieve a decent "Accuracy" score, but it would completely fail to identify critical emergencies like "Stab Wounds." We had to implement specialized safety guardrails to force the AI to learn all categories equally.
+                  </p>
+                </div>
+
+                <SectionHeader id="augmentations" title="Data Augmentation Strategy" icon={Layers} subtitle="Teaching the AI to handle real-world variations without confusing it." />
+                <div className="prose prose-slate max-w-none text-slate-600 mb-16">
+                  <p>
+                    To prevent the AI from simply memorizing our tiny library of 381 images, we used a technique called <strong>Data Augmentation</strong>. Every time the AI looks at a photograph during training, we slightly alter the image—perhaps by flipping it horizontally, slightly adjusting the brightness, or zooming in. This forces the AI to learn the underlying medical patterns of a wound rather than just memorizing the exact pixels of a specific photograph.
+                  </p>
+
+                  <NonExpertCallout title="Why We Turned Off 'Heavy' Augmentations">
+                    <p>In modern computer vision, it is common to use extreme augmentations to challenge the AI. For example, "Mixup" blends two totally different photos together, and "CutMix" literally cuts a square out of one photo and pastes it onto another.</p>
+                    <p>However, through rigorous testing, we discovered that these heavy techniques actually <strong>damaged</strong> our models' performance. Medical images rely on tiny, precise textures—like the exact redness (erythema) of a burn or the specific tearing patterns of a laceration. Cutting and mixing these images destroyed the clinical evidence. By restricting the AI to <strong>light, realistic augmentations</strong>, we preserved the medical integrity of the photos while still preventing the AI from memorizing the test answers.</p>
+                  </NonExpertCallout>
+                </div>
+
+                <SectionHeader id="models" title="The 7 AI Models Tested" icon={BrainCircuit} subtitle="Comparing different 'brains' to see which thinks best." />
+                <div className="space-y-12 mb-16">
+                  
+                  {/* Category 1: CNNs */}
+                  <div>
+                    <h3 className="text-xl font-extrabold text-slate-800 border-b-2 border-slate-100 pb-3 mb-6 flex items-center gap-2">
+                      <Database className="w-5 h-5 text-blue-600"/> Standard Image Processors (CNNs)
+                    </h3>
+                    <p className="text-slate-600 mb-4 text-sm">These models scan images pixel-by-pixel, looking for edges and shapes. They have been the standard in medical technology for the last decade.</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <ModelCard 
+                        title="ResNet-50" type="Classic Benchmark" icon={Database} 
+                        description="The older, reliable standard that almost all scientific papers use as a baseline." 
+                        rationale="Included to prove whether modern, complex models are actually worth using over the tried-and-true classics." 
+                      />
+                      <ModelCard 
+                        title="EfficientNet" type="Modern Standard" icon={Zap} 
+                        description="A highly optimized version of the classic scanner designed to be fast without losing accuracy." 
+                        rationale="It is currently the 'workhorse' of the modern medical imaging industry." 
+                      />
+                      <ModelCard 
+                        title="ConvNeXt-Tiny" type="Modernized Scanner" icon={Layers} 
+                        description="Takes the older pixel-scanning technology and upgrades it using modern design tricks from newer AI architectures." 
+                        rationale="Often provides the most understandable visual explanations (heatmaps) for doctors, showing exactly what part of the wound it looked at." 
+                      />
+                    </div>
+                  </div>
+
+                  {/* Category 2: Transformers */}
+                  <div>
+                    <h3 className="text-xl font-extrabold text-slate-800 border-b-2 border-slate-100 pb-3 mb-6 flex items-center gap-2">
+                      <Cpu className="w-5 h-5 text-blue-600"/> Modern Attention Models (Transformers)
+                    </h3>
+                    <p className="text-slate-600 mb-4 text-sm">Originally invented for ChatGPT to process language, this technology was adapted to "look" at images by figuring out which parts of a picture are the most important to focus on.</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <ModelCard 
+                        title="Swin-Tiny" type="Transformer" icon={Cpu} 
+                        description="Focuses its 'attention' on small patches of the image rather than trying to process the whole picture at once." 
+                        rationale="Excellent at processing highly textured skin pathologies, such as analyzing the surface details of a burn." 
+                      />
+                    </div>
+                  </div>
+
+                  {/* Category 3: Hybrids */}
+                  <div>
+                    <h3 className="text-xl font-extrabold text-slate-800 border-b-2 border-slate-100 pb-3 mb-6 flex items-center gap-2">
+                      <Activity className="w-5 h-5 text-blue-600"/> Hybrid Architectures
+                    </h3>
+                    <p className="text-slate-600 mb-4 text-sm">These models attempt to get the "best of both worlds" by combining traditional pixel-scanning with modern attention mechanisms.</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <ModelCard 
+                        title="MaxViT-Tiny" type="Hybrid AI" icon={BarChart3} 
+                        description="Combines the deep pixel-scanning ability of older models with the 'attention' ability of newer models." 
+                        rationale="Provides highly balanced processing, allowing it to see both microscopic details and the macroscopic shape of the wound simultaneously." 
+                      />
+                      <ModelCard 
+                        title="FastViT-SA12" type="High-Speed Hybrid" icon={Zap} 
+                        description="An AI designed by Apple that physically restructures its own 'brain' after training to run much faster during medical inference." 
+                        rationale="We wanted to see if this self-restructuring process acts as a natural defense against memorizing small datasets." 
+                      />
+                    </div>
+                  </div>
+
+                  {/* Category 4: Edge Models */}
+                  <div>
+                    <h3 className="text-xl font-extrabold text-slate-800 border-b-2 border-slate-100 pb-3 mb-6 flex items-center gap-2">
+                      <Target className="w-5 h-5 text-blue-600"/> Lightweight Edge Models
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <ModelCard 
+                        title="YOLOv8" type="Real-Time Vision" icon={Target} 
+                        description="An extremely small, incredibly fast model designed to run directly on edge devices like smartphones or low-power hospital tablets." 
+                        rationale="To see if we can get hospital-grade accuracy without needing massive cloud supercomputers to run the software." 
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <SectionHeader id="training" title="How We Trained the AI" icon={Settings} subtitle="The specialized rules we used to prevent failure." />
+                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm mb-16">
+                  <p className="text-slate-600 mb-6">In addition to adjusting our Data Augmentations, we curated the learning environment with specific rules to handle our small dataset size.</p>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div>
+                      <h4 className="font-bold text-slate-900 border-b border-slate-100 pb-2 mb-4 text-lg">The Setup</h4>
+                      <ParameterItem name="High Resolution Viewing" detail="Standard AIs look at small, blurry 224x224 pixel images. We forced our models to look at larger 384x384 images so they wouldn't miss tiny details like skin redness or slight tearing." />
+                      <ParameterItem name="Focal Loss Mathematics" detail="We used a special mathematical formula that actively punishes the AI if it only focuses on the easy-to-guess 'Bruises'. It forces the AI to spend more time studying its mistakes on the rare 'Stab Wounds'." />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-slate-900 border-b border-slate-100 pb-2 mb-4 text-lg">The Safety Guardrails</h4>
+                      <ParameterItem name="Early Stopping" detail="Like a student memorizing a practice test instead of learning the concepts, an AI can over-study. We programmed the system to automatically hit the 'kill switch' the moment the AI stopped learning new concepts." />
+                      <ParameterItem name="Weight Smoothing" detail="Instead of trusting the AI's 'brain state' at one specific second, we continuously averaged its knowledge over time. This makes the final model much more stable and reliable for real-world medical use." />
+                    </div>
+                  </div>
+                </div>
+
+                <SectionHeader id="metrics" title="How We Measure Success" icon={Scale} subtitle="Why 'Accuracy' is a dangerously misleading number." />
+                <div className="prose prose-slate max-w-none text-slate-600 mb-10">
+                  <p>
+                    If 90% of a doctor's patients have a common cold, the doctor could just guess "You have a cold" for everyone and boast a 90% Accuracy rating—even if they completely missed the 10% who had a serious illness. 
+                  </p>
+                  <p>
+                    Because our wound dataset is heavily skewed towards Bruises, raw "Accuracy" is a terrible metric. We used the following advanced clinical metrics to determine which model is actually safe to deploy in the real world:
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
+                  <MetricCard 
+                    title="Macro F1-Score" 
+                    highlight="Our Primary Benchmark" 
+                    description="This calculates a score for each of the 6 wound types individually, and then averages those 6 scores together equally. An AI cannot get a high Macro F1 score unless it is good at identifying the rare stab wounds, not just the common bruises." 
+                  />
+                  <MetricCard 
+                    title="Minimum Recall" 
+                    highlight="The Ultimate Safety Net" 
+                    description="Recall measures how many actual, real-world cases the AI successfully found. 'Minimum Recall' looks at the AI's weakest category. If an AI has a Min Recall of 10%, it means it is entirely missing 90% of a specific type of injury. We want this as high as possible." 
+                  />
+                  <MetricCard 
+                    title="Top-3 Accuracy" 
+                    highlight="Good for 'Second Opinions'" 
+                    description="This measures whether the correct diagnosis was anywhere in the AI's top 3 guesses. In a hospital, an AI doesn't always have to be perfectly autonomous; it succeeds if it surfaces the correct option for a human doctor to consider." 
+                  />
+                  <MetricCard 
+                    title="Confidence Gap" 
+                    highlight="Model Self-Awareness" 
+                    description="This measures the difference in how 'confident' the AI is when it's right versus when it's wrong. A high gap means the AI 'knows when it doesn't know.' This is vital because it allows the software to flag uncertain predictions for human review." 
+                  />
+                  <MetricCard 
+                    title="ECE (Calibration Error)" 
+                    highlight="Trustworthiness" 
+                    description="If the AI says 'I am 90% sure this is a burn,' is it actually right 90% of the time? A low ECE score means the AI's confidence percentages are honest and can be trusted by medical staff." 
+                  />
+                  <MetricCard 
+                    title="Cohen's Kappa & MCC" 
+                    highlight="The Reality Checks" 
+                    description="These are statistical formulas that measure how much better the AI is performing compared to a monkey simply guessing randomly based on the odds. It proves the AI is actually intelligent." 
+                  />
+                </div>
+
+                <SectionHeader id="results" title="Final Leaderboard" icon={Trophy} subtitle="The definitive ranking of the 7 architectures tested." />
+                
+                <div className="mb-12">
+                  <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                    <div className="overflow-x-auto p-0">
+                      <table className="w-full text-left border-collapse whitespace-nowrap">
+                        <thead>
+                          <tr className="bg-slate-800 text-white text-xs uppercase tracking-wider">
+                            <th className="p-4 font-bold">Model Architecture</th>
+                            <th className="p-4 font-bold" title="Higher is better. Averages all wound types equally.">Macro F1 <span className="text-yellow-400">★</span></th>
+                            <th className="p-4 font-bold" title="The AI's worst performance on a single wound type.">Min. Recall (Worst Class)</th>
+                            <th className="p-4 font-bold" title="Does it know when to ask a human for help?">Conf. Gap</th>
+                            <th className="p-4 font-bold" title="Is the correct answer in its top 3 guesses?">Top-3 Acc.</th>
+                            <th className="p-4 font-bold">Raw Accuracy</th>
+                          </tr>
+                        </thead>
+                        <tbody className="text-sm divide-y divide-slate-200">
+                          <tr className="hover:bg-blue-50 bg-blue-50/30">
+                            <td className="p-4 font-bold text-blue-900 flex items-center gap-2">
+                              <Trophy className="w-5 h-5 text-yellow-500" /> MaxViT-Tiny
+                            </td>
+                            <td className="p-4 font-black text-blue-700">0.8431</td>
+                            <td className="p-4 text-slate-700 font-medium">66.7% (on Burns)</td>
+                            <td className="p-4 text-slate-700">0.1876</td>
+                            <td className="p-4 text-slate-700">97.5%</td>
+                            <td className="p-4 text-slate-500">87.5%</td>
+                          </tr>
+                          <tr className="hover:bg-slate-50">
+                            <td className="p-4 font-medium text-slate-900">YOLOv8-cls (Fair)</td>
+                            <td className="p-4 font-bold text-slate-800">0.8078</td>
+                            <td className="p-4 text-slate-600">50.0% (on Burns)</td>
+                            <td className="p-4 text-slate-600">0.1404</td>
+                            <td className="p-4 text-slate-600">92.5%</td>
+                            <td className="p-4 text-slate-500">85.0%</td>
+                          </tr>
+                          <tr className="hover:bg-slate-50">
+                            <td className="p-4 font-medium text-slate-900">Swin-Tiny</td>
+                            <td className="p-4 font-bold text-slate-800">0.7795</td>
+                            <td className="p-4 text-slate-600">70.0% (on Cuts)</td>
+                            <td className="p-4 text-slate-600">0.0576</td>
+                            <td className="p-4 text-slate-600">97.5%</td>
+                            <td className="p-4 text-slate-500">80.0%</td>
+                          </tr>
+                          <tr className="hover:bg-slate-50">
+                            <td className="p-4 font-medium text-slate-900">ConvNeXt-Tiny</td>
+                            <td className="p-4 font-bold text-slate-800">0.7145</td>
+                            <td className="p-4 text-slate-600">50.0% (on Burns)</td>
+                            <td className="p-4 text-slate-600">0.1194</td>
+                            <td className="p-4 text-slate-600">97.5%</td>
+                            <td className="p-4 text-slate-500">76.3%</td>
+                          </tr>
+                          <tr className="hover:bg-slate-50">
+                            <td className="p-4 font-medium text-slate-900">EfficientNetV2-S</td>
+                            <td className="p-4 font-bold text-slate-800">0.6951</td>
+                            <td className="p-4 text-slate-600">20.0% (on Stabs)</td>
+                            <td className="p-4 text-slate-600">0.0574</td>
+                            <td className="p-4 text-slate-600">95.0%</td>
+                            <td className="p-4 text-slate-500">76.3%</td>
+                          </tr>
+                          <tr className="hover:bg-slate-50">
+                            <td className="p-4 font-medium text-slate-900">FastViT-SA12</td>
+                            <td className="p-4 font-bold text-slate-800">0.6340</td>
+                            <td className="p-4 text-slate-600">40.0% (on Cuts)</td>
+                            <td className="p-4 text-slate-600">0.0392</td>
+                            <td className="p-4 text-slate-600">95.0%</td>
+                            <td className="p-4 text-slate-500">66.3%</td>
+                          </tr>
+                          <tr className="hover:bg-slate-50 opacity-75">
+                            <td className="p-4 font-medium text-slate-900">ResNet-50</td>
+                            <td className="p-4 font-bold text-slate-800">0.4958</td>
+                            <td className="p-4 text-red-600 font-medium">8.3% (on Bruises)</td>
+                            <td className="p-4 text-slate-600">0.0204</td>
+                            <td className="p-4 text-slate-600">86.3%</td>
+                            <td className="p-4 text-slate-500">47.5%</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mb-8">
+                  <h3 className="text-xl font-extrabold text-slate-800 border-b-2 border-slate-100 pb-3 mb-6">Conclusion & Winner</h3>
+                  <div className="bg-gradient-to-br from-blue-900 to-indigo-900 rounded-2xl p-8 text-white shadow-xl relative overflow-hidden">
+                    <Trophy className="absolute -bottom-6 -right-6 w-48 h-48 text-white/5 transform -rotate-12" />
+                    <div className="relative z-10 flex flex-col md:flex-row gap-8 items-start">
+                      <div className="flex-shrink-0 bg-white/10 p-4 rounded-2xl backdrop-blur-sm border border-white/20">
+                        <Trophy className="w-12 h-12 text-yellow-400" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-blue-200 uppercase tracking-widest mb-1">Deployability Score Champion</h4>
+                        <h2 className="text-3xl font-black mb-4">MaxViT-Tiny</h2>
+                        <div className="space-y-4 text-blue-50 leading-relaxed text-sm md:text-base max-w-2xl">
+                          <p>
+                            The final winning model is the hybrid <strong>MaxViT-Tiny</strong>, achieving an excellent <strong>Macro F1 score of 0.8431</strong>.
+                          </p>
+                          <p>
+                            <strong>Why it won:</strong> MaxViT proved to be the safest and most reliable model for real-world medical use. It achieved the highest "Minimum Recall," successfully identifying at least 66.7% of all wound types (meaning it doesn't completely fail on rare cases). Furthermore, it possesses the largest "Confidence Gap" (0.18), meaning the AI is highly self-aware—when it makes a mistake, its confidence plummets, making it incredibly easy for the software to alert a human doctor that a "second opinion" is needed.
+                          </p>
+                          <p>
+                            <strong>Runner-up (YOLOv8):</strong> Scoring an impressive 0.8078 Macro F1, YOLOv8 is a fantastic alternative. Because it is incredibly lightweight, it is the recommended choice if the software needs to run locally on a smartphone or tablet without an internet connection.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </main>
+            </div>
+          );
+        }
+
+        // Mount the React Application
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
